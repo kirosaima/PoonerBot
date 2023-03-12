@@ -3,7 +3,6 @@ mod commands;
 use std::env;
 
 use serenity::async_trait;
-//use serenity::http::error::ErrorResponse;
 use serenity::model::application::command::Command;
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::gateway::Ready;
@@ -18,8 +17,15 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction {
             println!("Received command interation: {:#?}", command);
 
+            let guild_id = 
+                env::var("GUILD_ID")
+                    .expect("Expected GUILD_ID in environment")
+                    .parse()
+                    .expect("GUILD_ID must be an integer");
+
             let content = match command.data.name.as_str() {
                 "ping" => commands::ping::run(&command.data.options),
+                "roles" => commands::roles::run(&command.data.options, guild_id).await,
                 _ => "not implemented :(".to_string(),
             };
 
@@ -45,10 +51,10 @@ impl EventHandler for Handler {
                 .parse()
                 .expect("GUILD_ID must be an integer"),
         );
-
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
             .create_application_command(|command| commands::ping::register(command))
+            .create_application_command(|command| commands::roles::register(command))
         })
         .await;
 
@@ -65,14 +71,13 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
+    
     // Configure client w bot token in env
     dotenv::dotenv().expect("Failed to load .env file");
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
     // Build client
-    let mut client = Client::builder(token, GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::DIRECT_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT)
+    let mut client = Client::builder(token, GatewayIntents::all())
         .event_handler(Handler)
         .await
         .expect("Error creating client");
