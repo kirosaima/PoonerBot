@@ -1,31 +1,27 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
-use std::fmt::Write;
 use std::sync::Arc;
 
 use serenity::async_trait;
-use serenity::client::bridge::gateway::{ShardId, ShardManager};
-use serenity::framework::standard::buckets::{LimitedFor, RevertBucket};
-use serenity::framework::standard::macros::{check, command, group, help, hook};
+use serenity::client::bridge::gateway::ShardManager;
+use serenity::framework::standard::macros::{command, group, help, hook};
 use serenity::framework::standard::{
     help_commands,
     Args,
     CommandGroup,
-    CommandOptions,
     CommandResult,
     HelpOptions,
-    Reason,
     StandardFramework, DispatchError,
 };
 use serenity::http::Http;
-use serenity::model::channel::{Channel, Message};
+use serenity::model::channel::Message;
 use serenity::model::gateway::{GatewayIntents, Ready};
 use serenity::model::id::UserId;
-use serenity::model::guild::Member;
-use serenity::model::permissions::Permissions;
+use serenity::model::guild::Guild;
 use serenity::prelude::*;
-use serenity::utils::{content_safe, ContentSafeOptions};
+use serenity::utils::MessageBuilder;
 use tokio::sync::Mutex;
+
 
 struct ShardManagerContainer;
 
@@ -218,7 +214,11 @@ async fn roles(ctx: &Context, msg: &Message) -> CommandResult {
     .map(|role| role.name)
     .collect();
     role_names_vec.drain(0..1);
-    msg.reply(ctx, &format!("`{}`", role_names_vec.join("\n"))).await?;
+    let response = MessageBuilder::new()
+            .quote_rest()
+            .push(role_names_vec.join("\n"))
+            .build();
+    msg.reply(ctx, response).await?;
     Ok(())
 }
 
@@ -234,6 +234,11 @@ async fn assign(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     dotenv::dotenv().expect("Failed to load .env file");
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     if let Some(member) = &msg.member {
+        let tmp = member.user.clone();
+        let id = tmp.unwrap().id;
+        msg.reply(ctx, &format!("{}", id)).await?;
+        //let guild = Guild::
+        //Guild::member(token, id);
         //
         // let user = Member::add_role(id, token, role_id);
     }
